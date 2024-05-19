@@ -13,4 +13,3 @@ gnome-terminal -- bash -c "python3 src/main.py 127.0.0.1:5002; exec bash"
 gnome-terminal -- bash -c "python3 src/main.py 127.0.0.1:5003; exec bash"
 
 # Start the fifth node on port 5004 with the neighbors file
-#gnome-terminal -- bash -c "python3 src/main.py 127.0.0.1:5004 src/inputs/vizinhos.txt; exec bash"
