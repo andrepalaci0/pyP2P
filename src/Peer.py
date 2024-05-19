@@ -12,10 +12,9 @@ class Peer:
         self.connections = []
         self._stop_event = threading.Event()
         self.key_values = key_values if key_values else {}
+        self.ttl = 100 
         self.seqno = 0
 
-        #if self.neighbors:
-        #    self.connect_to_neighbors()
 
     def connect_to_neighbors(self):
         for neighbor in self.neighbors[:]:
@@ -164,7 +163,13 @@ class Peer:
         pass
 
     def change_ttl(self):
-        pass
+        aux = int(input("Digite o novo valor de TTL: "))
+        if aux < 1:
+            print("Valor de TTL invalido")
+            return
+        self.ttl = aux
+        print(f"Novo valor de TTL: {self.ttl}")
+        
 
     def list_neighbors(self):
         print(f"Ha {len(self.neighbors)} vizinhos na tabela:")
