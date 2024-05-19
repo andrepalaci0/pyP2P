@@ -112,10 +112,15 @@ class Peer:
             self.call_command(command)
 
     def stop(self):
-        self._stop_event.set()  # Sinaliza para a thread que ela deve parar
+        self._stop_event.set()  # Signal the thread to stop
         for _, _, conn in self.connections:
-            conn.close()
+            try:
+                conn.shutdown(socket.SHUT_RDWR)  # Disable further send and receive operations
+                conn.close()
+            except socket.error as e:
+                print(f"Error closing connection: {e}")
         self.socket.close()
+
 
     def hello(self):
         self.list_neighbors()
