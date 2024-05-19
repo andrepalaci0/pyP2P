@@ -3,7 +3,7 @@ import threading
 import time
 
 class Peer:
-    def __init__(self, host, port, neighbors=None):
+    def __init__(self, host, port, neighbors=None, key_values=None):
         self.host = host
         self.port = int(port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -11,10 +11,11 @@ class Peer:
         self.neighbors = neighbors if neighbors else []
         self.connections = []
         self._stop_event = threading.Event()
+        self.key_values = key_values if key_values else {}
         self.seqno = 0
 
-        if self.neighbors:
-            self.connect_to_neighbors()
+        #if self.neighbors:
+        #    self.connect_to_neighbors()
 
     def connect_to_neighbors(self):
         for neighbor in self.neighbors[:]:
@@ -27,6 +28,7 @@ class Peer:
                 self.neighbors.remove(neighbor)
 
     def connect(self, peer_host, peer_port):
+        time.sleep(0.5)
         conn = socket.create_connection((peer_host, peer_port))
         self.connections.append((peer_host, peer_port, conn))
         print(f"Connected to {peer_host}:{peer_port}")
@@ -191,6 +193,7 @@ class Peer:
     def start(self):
         listen_thread = threading.Thread(target=self.listen)
         listen_thread.start()
+        self.connect_to_neighbors()
 
         command_thread = threading.Thread(target=self.handle_command)
         command_thread.start()

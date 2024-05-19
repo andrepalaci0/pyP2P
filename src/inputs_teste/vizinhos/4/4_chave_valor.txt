@@ -1,0 +1,5 @@
+pera 2
+leao 67
+vermelho_sangue 33
+chico_buarque 10
+jose 14

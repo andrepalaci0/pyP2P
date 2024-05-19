@@ -1,0 +1,5 @@
+laranja 5
+dragao 12
+azul_claro 78
+joao_gilberto 6
+pedro 9

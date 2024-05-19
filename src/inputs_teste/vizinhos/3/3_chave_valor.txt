@@ -1,0 +1,5 @@
+maca 8
+unicornio 45
+amarelo_ouro 56
+caetano_veloso 11
+maria 21

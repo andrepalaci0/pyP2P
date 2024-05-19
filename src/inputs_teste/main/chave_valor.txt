@@ -1,0 +1,5 @@
+banana 1
+grifo 134
+manca_roxa 44
+tim_maia 3
+arlindo 2
