@@ -30,6 +30,12 @@ class Peer:
         self.active_neighbor = None
         self.neighbors_candidates = []
         
+        self.statistic = {
+            'fl': {'searchs': 0, 'hops': 0},
+            'rw': {'searchs': 0, 'hops': 0},
+            'bp': {'searchs': 0, 'hops': 0}
+        }
+        
 
     
     def connect(self, peer_host, peer_port):
@@ -83,19 +89,30 @@ class Peer:
 
 
         args_parts = args.split(" ")
+        aux_mode = args_parts[0]
         if ((origin, seqno)) in self.seen_messages and not operation.endswith("_OK") and operation!= "HELLO" and ((origin, seqno)) not in self.walk_start:
             print(f"Message from {origin} with seqno {seqno} has already been seen. Ignoring.")
             return
         # Add the message to seen messages if it is not a response or HELLO
-        if not operation.endswith("_OK") and operation!= "HELLO":
+        if not operation.endswith("_OK") and operation!= "HELLO" and operation != "BYE":
             self.seen_messages.add((origin, seqno))
-        # Check TTL
+
+        if not operation.endswith("_OK"):
+            with socket.create_connection((origin.split(":"))) as conn:
+                conn.sendall(f"{self.host}:{self.port} {self.seqno} 1 {operation}_OK".encode())    
         
-        conn.sendall(f"{self.host}:{self.port} {self.seqno} 1 {operation}_OK".encode())    
         ttl = int(ttl)-1
-        if ttl == 0 and operation != "BYE" and operation != "HELLO":
+        if ttl == 0 and operation != "BYE" and operation != "HELLO" and not operation.endswith("_OK"):
             print("TTL reached 0. Dropping message.")
             return
+        
+        if aux_mode == 'FL':
+            self.statistic['fl']['searchs'] += 1
+        elif aux_mode == 'RW':
+            self.statistic['rw']['searchs'] += 1
+        elif aux_mode == 'BP':
+            self.statistic['bp']['searchs'] += 1
+            
         
         print(
             f"Received message  {message}"
@@ -122,12 +139,18 @@ class Peer:
             hop_count = args_parts[3]
             self.handle_found_key(origin, seqno, ttl, key, value, mode, hop_count)
             return
-        else:
-            print(f"Unknown operation: {operation}")
+
             
     def handle_found_key(self, origin, seqno, ttl, key, value, mode, hop_count):
         if self.waiting_results.get(key):
             print(f"Valor encontrado!  Chave: {key}  Valor: {value}")
+            if mode == "FL":
+                self.statistic['fl']['hops'] += int(hop_count)
+            elif mode == "RW":
+                self.statistic['rw']['hops'] += int(hop_count)
+            elif mode == "BP":
+                self.statistic['bp']['hops'] += int(hop_count)
+                
             self.waiting_results[key] = False
             return
         
@@ -137,9 +160,8 @@ class Peer:
             peer_host, peer_port = neighbor.split(":")
             if(peer_port == self.search_hops[key]):
                 with socket.create_connection((peer_host, peer_port)) as conn:
-                    conn.sendall(message.encode())
-                    print("Found right HOP")
                     print(f"Enviando mensagem de valor encontrado para {peer_host}:{peer_port}")
+                    conn.sendall(message.encode())
                     return
                 
             
@@ -437,6 +459,32 @@ class Peer:
     
     
     def stats(self):
+        stats = self.statistic
+
+        def calculate_average_hops(searches, hops):
+            if searches == 0:
+                return 0
+            return hops / searches
+
+        # Total messages seen
+        total_flooding_messages = stats['fl']['searchs']
+        total_random_walk_messages = stats['rw']['searchs']
+        total_depth_search_messages = stats['bp']['searchs']
+
+        # Average hops to find destination
+        avg_hops_flooding = calculate_average_hops(stats['fl']['searchs'], stats['fl']['hops'])
+        avg_hops_random_walk = calculate_average_hops(stats['rw']['searchs'], stats['rw']['hops'])
+        avg_hops_depth_search = calculate_average_hops(stats['bp']['searchs'], stats['bp']['hops'])
+
+        # Display statistics
+        print("Estatisticas")
+        print(f"Total de mensagens de flooding vistas: {total_flooding_messages}")
+        print(f"Total de mensagens de random walk vistas: {total_random_walk_messages}")
+        print(f"Total de mensagens de busca em profundidade vistas: {total_depth_search_messages}")
+        print(f"Media de saltos ate encontrar destino por flooding: {avg_hops_flooding:.2f}")
+        print(f"Media de saltos ate encontrar destino por random walk: {avg_hops_random_walk:.2f}")
+        print(f"Media de saltos ate encontrar destino por busca em profundidade: {avg_hops_depth_search:.2f}")
+
         pass
     
     def change_ttl(self):
