@@ -1,5 +1,5 @@
-abacate 7
-fenix 99
-verde_musgo 23
-gilberto_gil 4
-ana 15
+7 abacate
+99 fenix
+23 verde_musgo
+4 gilberto_gil
+15 ana

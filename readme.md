@@ -26,9 +26,7 @@ No momento tem-se 5 nós, denominados: main, 1, 2, 3 e 4. O nó main é o nó qu
 A topologia é a seguinte:
 ```
 
-main -- 2
-  |     |  
-  1 -- 3 -- 4
+main -- 1 -- 2 -- 3 -- 4
 
 
 ```

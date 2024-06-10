@@ -1,5 +1,5 @@
-pera 2
-leao 67
-vermelho_sangue 33
-chico_buarque 10
-jose 14
+2 pera
+67 leao
+33 vermelho_sangue
+10 chico_buarque
+14 jose

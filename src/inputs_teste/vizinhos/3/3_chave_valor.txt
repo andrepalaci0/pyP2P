@@ -1,5 +1,5 @@
-maca 8
-unicornio 45
-amarelo_ouro 56
-caetano_veloso 11
-maria 21
+8 maca
+45 unicornio
+56 amarelo_ouro
+11 caetano_veloso
+21 maria

@@ -97,9 +97,9 @@ class Peer:
         if not operation.endswith("_OK") and operation!= "HELLO" and operation != "BYE":
             self.seen_messages.add((origin, seqno))
 
-        if not operation.endswith("_OK"):
-            with socket.create_connection((origin.split(":"))) as conn:
-                conn.sendall(f"{self.host}:{self.port} {self.seqno} 1 {operation}_OK".encode())    
+        if not operation.endswith("_OK") and not operation == "BYE":
+            with socket.create_connection((origin.split(":"))) as nwconn:
+                nwconn.sendall(f"{self.host}:{self.port} {self.seqno} 1 {operation}_OK".encode())    
         
         ttl = int(ttl)-1
         if ttl == 0 and operation != "BYE" and operation != "HELLO" and not operation.endswith("_OK"):
@@ -125,10 +125,11 @@ class Peer:
             self.handle_hello(origin, conn)
             return
         elif operation == "SEARCH":
+            self.seqno += 1
             self.handle_search_message(origin, seqno, ttl, args, conn)
             return
         elif operation == "VAL":
-            print(f"DEBUG {args}")
+            #print(f"DEBUG {args}")
             args_parts = args.split(" ")
             if len(args_parts) < 4:
                 print("Invalid VAL message format")
@@ -143,7 +144,7 @@ class Peer:
             
     def handle_found_key(self, origin, seqno, ttl, key, value, mode, hop_count):
         if self.waiting_results.get(key):
-            print(f"Valor encontrado!  Chave: {key}  Valor: {value}")
+            print(f"VALOR ENCONTRADO!  Chave: {key}  Valor: {value}\n")
             if mode == "FL":
                 self.statistic['fl']['hops'] += int(hop_count)
             elif mode == "RW":
@@ -154,7 +155,7 @@ class Peer:
             self.waiting_results[key] = False
             return
         
-        print(f"DEBUG: {hop_count} {self.search_hops.get(key)}")
+        #print(f"DEBUG: {hop_count} {self.search_hops.get(key)}")
         message = f"{origin} {seqno} {self.ttl-1} VAL {mode} {key} {value} {hop_count}"
         for neighbor in self.neighbors:
             peer_host, peer_port = neighbor.split(":")
@@ -176,7 +177,7 @@ class Peer:
            return
        mode, last_hop_port, key, hop_count = parts
        self.search_hops[key] = last_hop_port
-       print(f"Handling SEARCH message: Mode: {mode}, Last Hop Port: {last_hop_port}, Key: {key}, Hop Count: {hop_count}")
+       #print(f"DEBUG: Handling SEARCH message: Mode: {mode}, Last Hop Port: {last_hop_port}, Key: {key}, Hop Count: {hop_count}")
 
        # Based on mode, select the appropriate search method
        if mode == "FL":
@@ -191,7 +192,7 @@ class Peer:
            print(f"Unknown SEARCH mode: {mode}")            
            
     def handle_search_flooding(self, origin, seqno, ttl, key, hop_count, last_hop_port, conn):
-        print(f"Handling SEARCH flooding: Origin: {origin}, SeqNo: {seqno}, TTL: {ttl}, Key: {key}, Hop Count: {hop_count}, Last Hop Port: {last_hop_port}")
+        #print(f"DEBUG: Handling SEARCH flooding: Origin: {origin}, SeqNo: {seqno}, TTL: {ttl}, Key: {key}, Hop Count: {hop_count}, Last Hop Port: {last_hop_port}")
         if key in self.key_values:
             print(f"Key {key} found in local table")
             value = self.key_values[key]
@@ -210,7 +211,7 @@ class Peer:
                 print(f"Enviando mensagem de busca para {peer_host}:{peer_port}")
                 
     def handle_search_random_walk(self, origin, seqno, ttl, key, hop_count, last_hop_port, conn):
-        print(f"Handling SEARCH random walk: Origin: {origin}, SeqNo: {seqno}, TTL: {ttl}, Key: {key}, Hop Count: {hop_count}")
+        #print(f"DEBUG: Handling SEARCH random walk: Origin: {origin}, SeqNo: {seqno}, TTL: {ttl}, Key: {key}, Hop Count: {hop_count}")
         if key in self.key_values:
             print(f"Key {key} found in local table")
             value = self.key_values[key]
@@ -276,8 +277,8 @@ class Peer:
         peer_host, peer_port = neighbor.split(":")
         peer_port = int(peer_port)
 
-        message = f"{self.host}:{self.port} {self.seqno} 1 HELLO"
         self.seqno+=1
+        message = f"{self.host}:{self.port} {self.seqno} 1 HELLO"
         
         with socket.create_connection((peer_host, peer_port)) as conn:
             conn.sendall(message.encode())
@@ -294,8 +295,8 @@ class Peer:
             print(f"Connected to {peer_host}:{peer_port}")
 
 
-            message = f"{self.host}:{self.port} {self.seqno} 1 HELLO"
             self.seqno+=1
+            message = f"{self.host}:{self.port} {self.seqno} 1 HELLO"
             with socket.create_connection(neighbor.split(":")) as conn:
                 conn.sendall(message.encode())
                 
