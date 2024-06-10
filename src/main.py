@@ -1,12 +1,13 @@
 import sys
 import socket
 import threading
+import Peer as Peer
 
-from Peer import Peer
 
 
 
 if __name__ == "__main__":
+
     neighbors = None
     key_value_pairs = {}
 
@@ -37,11 +38,9 @@ if __name__ == "__main__":
             print(f"Formato inválido no arquivo de chave-valor: {key_value_path}")
             sys.exit(1)
 
-
     fulladdr = sys.argv[1]
     addr, port = fulladdr.split(":")
     port = int(port)
 
-    node = Peer(addr, port, neighbors)
+    node = Peer.Peer(addr, port, neighbors, key_value_pairs)
     node.start()
- 

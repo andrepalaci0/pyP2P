@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #dá pra usar o comando nohup para rodar o programa em background...
+
 # Start the first node on port 5000
 gnome-terminal -- bash -c "python3 src/main.py 127.0.0.1:5000 src/inputs_teste/vizinhos/1/1_vizinhos.txt src/inputs_teste/vizinhos/1/1_chave_valor.txt; exec bash"
 
