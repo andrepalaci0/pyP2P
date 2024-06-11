@@ -1,9 +1,11 @@
+
 import random
 import socket
 import threading
 import time
 import os
 from concurrent.futures import ThreadPoolExecutor
+import traceback
 
 class Peer:
     def __init__(self, host, port, neighbors=None, key_values=None):
@@ -67,15 +69,16 @@ class Peer:
                         break
                     message = data.decode()
                     if message:
-                        self.handle_message(message, conn)
+                        self.handle_message(message, conn, address)
                 except socket.error as e:
                     print(f"Socket error: {e}")
                     break
         except Exception as e:
-            print(f"Error handling client: {e}")
+            print(f"Error handling client: {e} ")
+            traceback.print_exc()
             
     
-    def handle_message(self, message, conn):
+    def handle_message(self, message, conn, address):
         parts = message.strip().split(" ", 3)  
         if len(parts) < 4:
             print("Invalid message format")
@@ -85,14 +88,25 @@ class Peer:
         operation = operation_parts[0]
         args = operation_parts[1] if len(operation_parts) > 1 else ""
         
-        # Check if the message has already been seen
-
 
         args_parts = args.split(" ")
         aux_mode = args_parts[0]
         if ((origin, seqno)) in self.seen_messages and not operation.endswith("_OK") and operation!= "HELLO" and ((origin, seqno)) not in self.walk_start:
             print(f"Message from {origin} with seqno {seqno} has already been seen. Ignoring.")
             return
+        
+        args_parts = args.split(" ")
+        
+        mode = args_parts[0]
+        ohost, oport = origin.split(":")
+        if oport == self.port and operation != "HELLO" and mode != "RW":
+            print(f"Message from {origin} with seqno {seqno} has already been seen. Ignoring.")
+            return
+        
+        if operation == "SEARCH" and mode == "FL" and oport == self.port:
+            print(f"Message from {origin} with seqno {seqno} has already been seen. Ignoring.")
+            return
+            
         # Add the message to seen messages if it is not a response or HELLO
         if not operation.endswith("_OK") and operation!= "HELLO" and operation != "BYE":
             self.seen_messages.add((origin, seqno))
@@ -112,11 +126,11 @@ class Peer:
             self.statistic['rw']['searchs'] += 1
         elif aux_mode == 'BP':
             self.statistic['bp']['searchs'] += 1
-            
         
         print(
             f"Received message  {message}"
         )
+        
         # Handle the operatio
         if operation == "BYE":
             self.handle_bye(origin)
@@ -134,7 +148,6 @@ class Peer:
             if len(args_parts) < 4:
                 print("Invalid VAL message format")
                 return
-            mode = args_parts[0]
             key = args_parts[1]
             value = args_parts[2]
             hop_count = args_parts[3]
@@ -156,7 +169,8 @@ class Peer:
             return
         
         #print(f"DEBUG: {hop_count} {self.search_hops.get(key)}")
-        message = f"{origin} {seqno} {self.ttl-1} VAL {mode} {key} {value} {hop_count}"
+        message = f"{origin} {seqno} {ttl-1} VAL {mode} {key} {value} {hop_count}"
+        self.seqno+=1
         for neighbor in self.neighbors:
             peer_host, peer_port = neighbor.split(":")
             if(peer_port == self.search_hops[key]):
@@ -196,31 +210,40 @@ class Peer:
         if key in self.key_values:
             print(f"Key {key} found in local table")
             value = self.key_values[key]
-            self.found_key(key, self.key_values[key], "FL", value , last_hop_port)
+            self.found_key(key, self.key_values[key], "FL", hop_count, last_hop_port)
             return
         
         old_message = f"{origin} {seqno} {ttl} SEARCH FL {last_hop_port} {key} {hop_count}"
         message = self.update_search_message(old_message, hop_count)
+        self.seen_messages.add((origin, seqno))
         for neighbor in self.neighbors:
             peer_host, peer_port = neighbor.split(":")
             peer_port = int(peer_port)
-            if peer_port == last_hop_port:
-                continue
-            with socket.create_connection((peer_host, peer_port)) as conn:
-                conn.sendall(message.encode())
-                print(f"Enviando mensagem de busca para {peer_host}:{peer_port}")
-                
+            if  peer_port != last_hop_port:    
+                with socket.create_connection((peer_host, peer_port)) as nwconn:
+                    nwconn.sendall(message.encode())
+                    print(f"Enviando mensagem de busca para {peer_host}:{peer_port}")
+
     def handle_search_random_walk(self, origin, seqno, ttl, key, hop_count, last_hop_port, conn):
         #print(f"DEBUG: Handling SEARCH random walk: Origin: {origin}, SeqNo: {seqno}, TTL: {ttl}, Key: {key}, Hop Count: {hop_count}")
         if key in self.key_values:
             print(f"Key {key} found in local table")
             value = self.key_values[key]
-            self.found_key(key, self.key_values[key], "RW", value, last_hop_port)
+            self.found_key(key, self.key_values[key], "RW", hop_count, last_hop_port)
         
         old_message = f"{origin} {seqno} {ttl} SEARCH RW {last_hop_port} {key} {hop_count}"
         message = self.update_search_message(old_message, hop_count)
-        random_index = random.randint(0, len(self.neighbors) - 1)
-        random_neighbor = self.neighbors[random_index]
+        
+        
+        eligible_neighbors = [neighbor for neighbor in self.neighbors if neighbor.split(":")[1] != last_hop_port]
+        if not eligible_neighbors:
+            for neighbor in self.neighbors:
+                if neighbor.split(":")[1] == last_hop_port:
+                    eligible_neighbors.append(neighbor)
+                    break
+
+        random_neighbor = random.choice(eligible_neighbors)
+        peer_host, peer_port = random_neighbor.split(":")
         peer_host, peer_port = random_neighbor.split(":")
         peer_port = int(peer_port)
         with socket.create_connection((peer_host, peer_port)) as conn:
@@ -239,6 +262,7 @@ class Peer:
                 with socket.create_connection((peer_host, peer_port)) as conn:
                     conn.sendall(message.encode())
                     print(f"Enviando mensagem de chave encontrada para {peer_host}:{peer_port}")
+                    print(f"{message}")
                     return
             
            
@@ -302,6 +326,8 @@ class Peer:
                 
             if neighbor not in self.neighbors:
                 self.neighbors.append(neighbor)
+                #caso a conexao seja bem sucedida, adiciona o vizinho na tabela
+                #caso não, o erro é lançado antes de adicionar o vizinho na tabela
 
             print(f"HELLO message sent to {peer_host}:{peer_port}")
             return True
@@ -337,8 +363,8 @@ class Peer:
                 print(f"Valor na tabela local!\nchave: {k} valor: {value}")
                 return
         origin = f"{self.host}:{self.port}"
-        self.seen_messages.add((origin, self.seqno))
         message = self.create_search_message("FL", key)
+        self.seen_messages.add((origin, self.seqno))
         
         self.waiting_results[key] = True
         for neighbor in self.neighbors:
@@ -355,6 +381,7 @@ class Peer:
     def update_search_message(self, message, hop_count):
         parts = message.split(" ")
         parts[7] = str(int(hop_count) + 1)
+        print(f"DEBUG: {parts[7]}")
         return f"{parts[0]} {parts[1]} {parts[2]} {parts[3]} {parts[4]} {self.port} {parts[6]} {parts[7]}"
 
     
@@ -518,7 +545,8 @@ class Peer:
             with socket.create_connection((peer_host, peer_port)) as conn:
                 message = f"{self.host}:{self.port} {self.seqno} 1 BYE"
                 conn.sendall(message.encode())
-                
+        print("Sent BYE message to neighbors")
+        print("Disconnecting...")
         with self.lock:
             for _, _, conn in self.connections:
                 try:
