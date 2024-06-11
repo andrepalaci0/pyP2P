@@ -1,5 +1,5 @@
-8 maca
-45 unicornio
-56 amarelo_ouro
-11 caetano_veloso
-21 maria
+8 chico_buarque
+32 gal_costa
+19 elis_regina
+25 caetano_veloso
+13 marcos_valle

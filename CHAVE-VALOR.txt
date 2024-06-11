@@ -1,0 +1,79 @@
+NÓ A:
+
+1 banana
+134 grifo
+44 manca_roxa
+3 tim_maia
+2 arlindo
+
+NÓ B:
+
+5 abacaxi
+27 luiza_sonza
+11 pedro_luís
+9 maria_bethânia
+4 joão_gilberto
+
+NÓ C:
+
+8 chico_buarque
+32 gal_costa
+19 elis_regina
+25 caetano_veloso
+13 marcos_valle
+
+NÓ D:
+
+2 ana_carolina
+41 roberto_carlos
+18 jorge_ben
+29 marisa_monte
+6 gilberto_gil
+
+NÓ E:
+
+3 marina_lima
+28 ivete_sangalo
+15 paulinho_da_viola
+21 martinho_da_vila
+10 nelson_sargento
+
+NÓ F:
+
+4 alceu_valença
+36 zeca_baleiro
+22 luiz_gonzaga
+17 jackson_do_pandeiro
+12 hilton_acoelho
+
+Nó G (127.0.0.1:5006)
+
+9 elba_ramalho
+35 dominguinhos
+20 fagner
+26 joão_donato
+16 nelson_cavaquinho
+
+Nó H (127.0.0.1:5007)
+7 cartola
+33 marcos_porto
+24 antônio_adolfo
+30 paulo_moura
+14 baden_powell
+
+
+Nó I (127.0.0.1:5008)
+
+6 nara_leão
+38 toquinho
+23 vinicius_cantuária
+31 paulo_césar_pinheiro
+11 dorival_caymmi
+
+Nó J (127.0.0.1:5009)
+
+8 astrud_gilberto
+39 sergio_mendes
+25 joão_bosco
+29 marcos_valle
+15 chico_anysio
